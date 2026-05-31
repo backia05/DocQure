@@ -1,0 +1,5 @@
+# services/identity-service/.dockerignore
+
+venv
+__pycache__
+.env

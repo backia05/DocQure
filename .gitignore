@@ -1,0 +1,18 @@
+# Git Ignore file for DocQure Project
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment files (NEVER commit these)
+.env
+
+# Node.js (for frontend)
+node_modules/
+build/
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/

@@ -1,0 +1,84 @@
+services:
+  # --- PostgreSQL Database Service ---
+  postgres-db:
+    image: postgres:13
+    container_name: docqure_db
+    environment:
+      POSTGRES_USER: docqure_user
+      POSTGRES_PASSWORD: Backia@05 # Make sure this is your actual password
+      POSTGRES_DB: docqure_main_db
+    ports:
+      - "5432:5432" # Expose DB port to your local machine for tools like DBeaver
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- Identity Service (Module 1) ---
+  identity-service:
+    build: ./services/identity-service # Tells Docker to build from the Dockerfile in this folder
+    container_name: identity_service
+    ports:
+      - "5001:5001" # Map container port 5001 to host port 5001
+    volumes:
+      - ./services/identity-service:/app # Mount local code for live reloading
+    environment:
+      - DATABASE_URL=postgresql://docqure_user:Backia%4005@postgres-db:5432/docqure_main_db
+      # IMPORTANT: Notice the changes above. We connect to the 'postgres-db' service name, not 'localhost'.
+      # And you must use your URL-encoded password.
+      - SECRET_KEY=a-super-secret-flask-key-change-this
+      - JWT_SECRET_KEY=another-super-secret-jwt-key-change-this
+    depends_on:
+      - postgres-db # Don't start this service until the database is ready
+
+  # --- AI Triage Service (Module 2) ---
+  ai-triage-service:
+    build: ./services/ai-triage-service
+    container_name: ai_triage_service
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./services/ai-triage-service:/app
+
+  # --- Scheduling Service (Module 3) ---
+  scheduling-service:
+    build: ./services/scheduling-service
+    container_name: scheduling_service
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./services/scheduling-service:/app
+    environment:
+      - DATABASE_URL=postgresql://docqure_user:Backia%4005@postgres-db:5432/docqure_main_db
+      - SECRET_KEY=a-different-secret-key-for-this-service
+      - JWT_SECRET_KEY=another-super-secret-jwt-key-change-this
+    depends_on:
+      - postgres-db
+
+  # --- Queue Management Service (Module 4) ---
+  queue-management-service:
+    build: ./services/queue-management-service
+    container_name: queue_management_service
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./services/queue-management-service:/app
+    environment:
+      - DATABASE_URL=postgresql://docqure_user:Backia%4005@postgres-db:5432/docqure_main_db
+      - SECRET_KEY=a-third-secret-key-for-this-service
+      - JWT_SECRET_KEY=another-super-secret-jwt-key-change-this
+    depends_on:
+      - postgres-db
+
+  # --- Frontend Service ---
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80" # Map container port 80 (Nginx) to host port 3000
+    depends_on:
+      - identity-service
+      - ai-triage-service
+      - scheduling-service
+      - queue-management-service
+
+volumes:
+  postgres_data:
